@@ -28,22 +28,30 @@ class _HomePageState extends State<HomePage> {
     XFile? pickedImage;
     try {
       pickedImage = await picker.pickImage(
-          source: inputSource == 'camera'
-              ? ImageSource.camera
-              : ImageSource.gallery,
-          maxWidth: 1920);
+        source:
+            inputSource == 'camera' ? ImageSource.camera : ImageSource.gallery,
+      );
 
       final String fileName = email! + "/" + path.basename(pickedImage!.path);
       File imageFile = File(pickedImage.path);
 
       try {
-        // Uploading the selected image with some custom meta data
-        await storage.ref(fileName).putFile(
-            imageFile,
-            SettableMetadata(customMetadata: {
-              'uploaded_by': email,
-              'description': 'Patient Image'
-            }));
+        if (kIsWeb) {
+          await storage.ref(fileName).putData(
+                await pickedImage.readAsBytes(),
+                SettableMetadata(contentType: 'image/jpeg', customMetadata: {
+                  'uploaded_by': email,
+                  'description': 'Patient Image'
+                }),
+              );
+        } else {
+          await storage.ref(fileName).putFile(
+              imageFile,
+              SettableMetadata(customMetadata: {
+                'uploaded_by': email,
+                'description': 'Patient Image'
+              }));
+        }
 
         // Refresh the UI
         setState(() {});
@@ -92,36 +100,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
-  //partie notification
-  void initState() {
-    super.initState();
-    messaging = FirebaseMessaging.instance;
-    messaging.getToken().then((value) {
-      print(value);
-    });
-    FirebaseMessaging.onMessage.listen((RemoteMessage event) {
-      print("message recieved");
-      print(event.notification!.body);
-      showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text("Notification"),
-              content: Text(event.notification!.body!),
-              actions: [
-                TextButton(
-                  child: Text("Ok"),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                )
-              ],
-            );
-          });
-    });
-  }
-
-  // fin de la partie notification
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -134,9 +112,13 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+              if (kIsWeb) ...[
+                ElevatedButton.icon(
+                    onPressed: () => _upload('gallery'),
+                    icon: const Icon(Icons.library_add),
+                    label: const Text('Gallery')),
+              ] else ...[
                 ElevatedButton.icon(
                     onPressed: () => _upload('camera'),
                     icon: const Icon(Icons.camera),
@@ -146,7 +128,7 @@ class _HomePageState extends State<HomePage> {
                     icon: const Icon(Icons.library_add),
                     label: const Text('Gallery')),
               ],
-            ),
+            ]),
             Expanded(
               child: FutureBuilder(
                 future: _loadImages(),
