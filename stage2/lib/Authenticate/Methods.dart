@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:stage2/Authenticate/LoginScree.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -21,6 +22,7 @@ Future<User?> createAccount(String name, String email, String password) async {
       "email": email,
       "status": "Unavalible",
       "uid": _auth.currentUser!.uid,
+      "token": await userCrendetial.user?.getIdToken(),
     });
 
     return userCrendetial.user;

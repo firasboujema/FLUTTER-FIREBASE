@@ -52,6 +52,11 @@ class _HomePageState extends State<HomePage> {
                 'description': 'Patient Image'
               }));
         }
+        void onResolve(foundURL) {
+          showDialogWithFields();
+        }
+
+        await storage.ref(fileName).getDownloadURL().then(onResolve);
 
         // Refresh the UI
         setState(() {});
@@ -170,6 +175,23 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+    );
+  }
+
+  void showDialogWithFields() {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('File uploaded successfully'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('ok'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
